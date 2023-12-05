@@ -42,15 +42,13 @@ def parse_friends():
     with open("./friends.txt", "r") as file:
         for line in file:
             data = line.strip().split(";")
-            if len(data) >= 2:  # Ensure there are at least 2 elements in the data list
+            if (len(data) and data[0]!="#") >= 2:  # Ensure there are at least 2 elements in the data list
                 name = data[0]
                 email = data[1]
                 # Split the third item (if exists) into a list based on comma-separated values
                 do_not_match_list = data[2].split(",") if len(data) > 2 else []
                 friend = Friend(name, email, do_not_match_list)
                 friends.append(friend)
-            else:
-                print(f"Empty line: {line.strip()}. Skipping.")
     file.close()
     return friends
 
@@ -165,7 +163,7 @@ assigned_gifts = assign_gifts(friends_list)
 
 print(debug)
 
-#if assigned_gifts:
-#    send_emails(assigned_gifts)
-#else:
-#    print("Unable to assign gifts. Please adjust constraints and try again.")
+if assigned_gifts:
+    send_emails(assigned_gifts)
+else:
+    print("Unable to assign gifts. Please adjust constraints and try again.")
