@@ -18,7 +18,7 @@ import random
 # Debugging settings
 # ===========================================================================
 
-#If debug==True, results are printed without sending emails
+#If debug==True, results are printed without sending emails. Defaults to True but can be defined in settings file
 debug = True
 
 # ===========================================================================
@@ -56,13 +56,14 @@ def parse_friends():
 
 # Parse credentials from credentials.txt
 def parse_credentials():
-    with open("./credentials.txt","r") as file:
+    with open("./settings.txt","r") as file:
         for line in file:
-            if line != "":
+            if line != "" and line[0]!="#":
                 data = line.split("=")
-                if str(data[0]).strip()=="gmail_user": gmail_user=str(data[1]).strip()
+                if str(data[0]).strip()=="debug":debug=bool(int(data[1].strip()))
+                if str(data[0]).strip()=="gmail_user": gmail_user=str(data[1].strip())
                 if str(data[0]).strip()=="gmail_app_password": gmail_app_password=str(data[1]).strip()
-    return gmail_user,gmail_app_password
+    return debug,gmail_user,gmail_app_password
     file.close()
 
 # Send an email to each gifter
@@ -151,7 +152,7 @@ def find_email_by_name(name, friends_list):
 friends_list=[]
 
 # Call function to parse credentials
-gmail_user,gmail_app_password=parse_credentials()
+debug,gmail_user,gmail_app_password=parse_credentials()
 
 # Call function to parse friends
 friends_list = parse_friends()
@@ -162,7 +163,9 @@ if debug==True:
 # Call function to assign gifts
 assigned_gifts = assign_gifts(friends_list)
 
-if assigned_gifts:
-    send_emails(assigned_gifts)
-else:
-    print("Unable to assign gifts. Please adjust constraints and try again.")
+print(debug)
+
+#if assigned_gifts:
+#    send_emails(assigned_gifts)
+#else:
+#    print("Unable to assign gifts. Please adjust constraints and try again.")
