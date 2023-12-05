@@ -1,0 +1,8 @@
+# If debug is set to 1, emails are not sent. Set to 0 for production use
+debug=1
+
+# Set this to your gmail account
+gmail_user = 'gmailuser@gmail.com'
+
+# Create application password https://support.google.com/mail/answer/185833?hl=en
+gmail_app_password = 'exam plep assw ord1'
