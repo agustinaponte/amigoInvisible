@@ -2,6 +2,7 @@
 #    One friend per line:
 #    friendsName;friendsEmail;doNotMatchName
 #    The doNotMatchName field is to prevent people from getting matched to their partner
-# Example: agustin;email@example.com;silvana
+# Example:
+#    agustin;email@example.com;silvana
 #
 ########################################################################################
