@@ -42,7 +42,7 @@ def parse_friends():
     with open("./friends.txt", "r") as file:
         for line in file:
             data = line.strip().split(";")
-            if (len(data) and data[0]!="#") >= 2:  # Ensure there are at least 2 elements in the data list
+            if (len(data) >= 2 and data[0]!="#"):  # Ensure there are at least 2 elements in the data list, and that data line is not a comment
                 name = data[0]
                 email = data[1]
                 # Split the third item (if exists) into a list based on comma-separated values
