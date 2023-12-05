@@ -4,5 +4,3 @@
 #    The doNotMatchName field is to prevent people from getting matched to their partner
 # Example:
 #    agustin;email@example.com;silvana
-#
-########################################################################################
