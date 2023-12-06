@@ -14,6 +14,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import random
 import re
+import argparse
 
 # ===========================================================================
 # Debugging settings
@@ -21,6 +22,19 @@ import re
 
 #If debug==True, results are printed without sending emails. Defaults to True but can be defined in settings file
 debug = True
+
+# ===========================================================================
+# Parse Arguments
+# ===========================================================================
+
+parser = argparse.ArgumentParser(description='Settings')
+parser.add_argument('--debug', type=str,
+                    help='If debug is set to 1, emails are not sent. Set to 0 for production use')
+parser.add_argument('--gmail_user', type=str, 
+                    help='Set this to your gmail account')
+parser.add_argument('--gmail_app_password', type=str, 
+                    help='Create application password https://support.google.com/mail/answer/185833?hl=en')
+args = parser.parse_args()
 
 # ===========================================================================
 # Class definition
@@ -64,13 +78,30 @@ def validate_emails(friends_list):
 
 # Parse credentials from credentials.txt
 def parse_credentials():
-    with open("./settings.txt","r") as file:
-        for line in file:
-            if line != "" and line[0]!="#":
-                data = line.split("=")
-                if str(data[0]).strip()=="debug":debug=bool(int(data[1].strip()))
-                if str(data[0]).strip()=="gmail_user": gmail_user=str(data[1].strip())
-                if str(data[0]).strip()=="gmail_app_password": gmail_app_password=str(data[1]).strip()
+    if args.debug and args.gmail_user and args.gmail_app_password:
+        debug = args.debug
+        gmail_user = args.gmail_user
+        gmail_app_password = args.gmail_app_password
+    else:
+        with open("./settings.txt","r") as file:
+            for line in file:
+                if line != "" and line[0]!="#":
+                    data = line.split("=")
+                    if args.debug:
+                        debug = bool(int(args.debug))
+                    else:
+                        if str(data[0]).strip()=="debug":debug=bool(int(data[1].strip()))
+                    
+                    if args.gmail_user:
+                        gmail_user = args.gmail_user
+                    else:
+                        if str(data[0]).strip()=="gmail_user": gmail_user=str(data[1].strip())
+
+                    if args.gmail_app_password:
+                        gmail_app_password = args.gmail_app_password
+                    else:
+                        if str(data[0]).strip()=="gmail_app_password": gmail_app_password=str(data[1]).strip()
+    print(debug,gmail_user,gmail_app_password)
     return debug,gmail_user,gmail_app_password
     file.close()
 
