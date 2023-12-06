@@ -13,6 +13,7 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import random
+import re
 
 # ===========================================================================
 # Debugging settings
@@ -51,6 +52,15 @@ def parse_friends():
                 friends.append(friend)
     file.close()
     return friends
+
+# Checks the all emails if it's valid or not
+def validate_emails(friends_list):
+    regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
+    for friend in friends_list:
+        if re.fullmatch(regex, friend.email) == False:
+            print(f"There is a mistake in {friend.name}'s email address.")
+            return False
+    return True
 
 # Parse credentials from credentials.txt
 def parse_credentials():
@@ -158,12 +168,14 @@ if debug==True:
     print(len(friends_list))
     for friend in friends_list: print(friend)
 
-# Call function to assign gifts
-assigned_gifts = assign_gifts(friends_list)
+# Check if all mails are valid before trying to send email
+if validate_emails(friends_list):
+    # Call function to assign gifts
+    assigned_gifts = assign_gifts(friends_list)
 
-print(debug)
+    print(debug)
 
-if assigned_gifts:
-    send_emails(assigned_gifts)
-else:
-    print("Unable to assign gifts. Please adjust constraints and try again.")
+    if assigned_gifts:
+        send_emails(assigned_gifts)
+    else:
+        print("Unable to assign gifts. Please adjust constraints and try again.")
