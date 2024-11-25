@@ -5,28 +5,41 @@
 # 
 # Created By  : Agustin Aponte
 # Created Date: Mon Dic 04 2023
+# =============================================================================
 
-# ===========================================================================
 # Imports
-# ===========================================================================
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import random
 import re
 import argparse
+import logging
+from datetime import datetime
+
+# ===========================================================================
+# Logging Configuration
+# ===========================================================================
+LOG_FILE = "amigo_invisible.log"
+logging.basicConfig(
+    filename=LOG_FILE,
+    level=logging.INFO,
+    format="%(asctime)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+
+def log(message):
+    print(message)  # Print to console
+    logging.info(message)
 
 # ===========================================================================
 # Debugging settings
 # ===========================================================================
-
-#If debug==True, results are printed without sending emails. Defaults to True but can be defined in settings file
-debug = True
+debug = True  # Defaults to True but can be overridden via args or settings file
 
 # ===========================================================================
 # Parse Arguments
 # ===========================================================================
-
 parser = argparse.ArgumentParser(description='Settings')
 parser.add_argument('--debug', type=str,
                     help='If debug is set to 1, emails are not sent. Set to 0 for production use')
@@ -39,8 +52,6 @@ args = parser.parse_args()
 # ===========================================================================
 # Class definition
 # ===========================================================================
-
-# Friend class. Each instance needs a name, email, and can include a do_not_match_list
 class Friend:
     def __init__(self, name, email, do_not_match_list=None):
         self.name = name
@@ -50,108 +61,98 @@ class Friend:
 # ===========================================================================
 # Helper functions
 # ===========================================================================
-
-# Parse friends from friends.txt
 def parse_friends():
-    friends=[]
+    friends = []
     with open("./friends.txt", "r") as file:
         for line in file:
-            data = line.strip().split(";")
-            if (len(data) >= 2 and data[0]!="#"):  # Ensure there are at least 2 elements in the data list, and that data line is not a comment
+            line = line.strip()
+            if not line or line.startswith("#"):
+                # Ignore empty lines and comments
+                continue
+            data = line.split(";")
+            if len(data) >= 2:
                 name = data[0]
                 email = data[1]
-                # Split the third item (if exists) into a list based on comma-separated values
                 do_not_match_list = data[2].split(",") if len(data) > 2 else []
-                friend = Friend(name, email, do_not_match_list)
-                friends.append(friend)
-    file.close()
+                friends.append(Friend(name, email, do_not_match_list))
     return friends
 
-# Checks the all emails if it's valid or not
+
 def validate_emails(friends_list):
     regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
     for friend in friends_list:
-        if re.fullmatch(regex, friend.email) == False:
-            print(f"There is a mistake in {friend.name}'s email address.")
+        if not re.fullmatch(regex, friend.email):
+            log(f"Invalid email: {friend.name} - {friend.email}")
             return False
     return True
 
-# Parse credentials from credentials.txt
 def parse_credentials():
+    # Prioridad a los argumentos pasados por línea de comandos
     if args.debug and args.gmail_user and args.gmail_app_password:
-        debug = args.debug
+        debug = bool(int(args.debug))
         gmail_user = args.gmail_user
         gmail_app_password = args.gmail_app_password
     else:
-        with open("./settings.txt","r") as file:
+        debug = None
+        gmail_user = None
+        gmail_app_password = None
+        
+        # Leer del archivo settings.txt si no están en los argumentos
+        with open("./settings.txt", "r") as file:
             for line in file:
-                if line != "" and line[0]!="#":
-                    data = line.split("=")
-                    if args.debug:
-                        debug = bool(int(args.debug))
-                    else:
-                        if str(data[0]).strip()=="debug":debug=bool(int(data[1].strip()))
-                    
-                    if args.gmail_user:
-                        gmail_user = args.gmail_user
-                    else:
-                        if str(data[0]).strip()=="gmail_user": gmail_user=str(data[1].strip())
+                # Ignorar líneas vacías o comentarios
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
 
-                    if args.gmail_app_password:
-                        gmail_app_password = args.gmail_app_password
-                    else:
-                        if str(data[0]).strip()=="gmail_app_password": gmail_app_password=str(data[1]).strip()
-    print(debug,gmail_user,gmail_app_password)
-    return debug,gmail_user,gmail_app_password
-    file.close()
+                # Separar clave y valor correctamente
+                key, value = map(str.strip, line.split("=", 1))
+                value = value.strip("'\"")  # Quitar comillas simples o dobles si están presentes
 
-# Send an email to each gifter
+                if key == "debug":
+                    debug = bool(int(value))
+                elif key == "gmail_user":
+                    gmail_user = value
+                elif key == "gmail_app_password":
+                    gmail_app_password = value
+
+    # Validar que las credenciales se hayan obtenido correctamente
+    if debug is None or gmail_user is None or gmail_app_password is None:
+        raise ValueError("Missing required credentials in settings.txt or command-line arguments.")
+
+    log(f"Parsed credentials: debug={debug}, gmail_user={gmail_user}")
+    return debug, gmail_user, gmail_app_password
+
+
 def notify_friend(gifter_email, gifter_name, gifts_to):
     sent_from = gmail_user
-    sent_subject = "Amigo Invisible 2023"
-    email_text = f"""\
-    Buen día {gifter_name}!
-
-    Este email es para avisarte que tienes que regalarle a {gifts_to}
-
-    Felicidades!
+    subject = "Amigo Invisible 2024"
+    email_text = f"Buen día {gifter_name}!\n\nEste email es para avisarte que tenes que regalarle a {gifts_to}.\n\nFelicidades!"
     
-    """
-    if debug==True:
-        print("From "+sent_from)
-        print(("To "+gifter_email))
-        print(MIMEText(email_text, 'plain'))
-    if debug==False:
-        # Create a multipart message and set headers
+    if debug:
+        log(f"Simulated Email:\nFrom: {sent_from}\nTo: {gifter_email}\nBody:\n{email_text}")
+    else:
         message = MIMEMultipart()
         message['From'] = sent_from
         message['To'] = gifter_email
-        message['Subject'] = sent_subject
-    
-        # Add body to email
+        message['Subject'] = subject
         message.attach(MIMEText(email_text, 'plain'))
-    
         try:
             server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-            server.ehlo()
             server.login(gmail_user, gmail_app_password)
             server.send_message(message)
             server.close()
-    
-            print('Email sent!')
-        except Exception as exception:
-            print("Error: %s!\n\n" % exception)
+            log(f"Email sent to {gifter_email}")
+        except Exception as e:
+            log(f"Error sending email to {gifter_email}: {e}")
 
-# Assign gifts by calling assign_recipients
 def assign_gifts(friends_list):
-    assigned_gifts = {}
     random.shuffle(friends_list)
     assignments = {}
     if assign_recipients(friends_list, assignments):
-        assigned_gifts = {friend.name: assignments[friend.name].name for friend in friends_list}
-    return assigned_gifts
+        return {friend.name: assignments[friend.name].name for friend in friends_list}
+    return {}
 
-# Assign recipients that are not in the doNotMatch list
 def assign_recipients(friends_list, assignments):
     if len(assignments) == len(friends_list):
         return True
@@ -166,47 +167,41 @@ def assign_recipients(friends_list, assignments):
             del assignments[current_friend.name]
     return False
 
-# Send email to each gifter
 def send_emails(assigned_gifts):
-    
-# Return email of a friend by name
     for giver, receiver in assigned_gifts.items():
         giver_email = find_email_by_name(giver, friends_list)
-        receiver_email = find_email_by_name(receiver, friends_list)
-        if giver_email and receiver_email:
-            print(f"{giver} {giver_email} le regala a  {receiver_email}")
-            notify_friend(giver_email,giver, receiver)
+        if giver_email:
+            notify_friend(giver_email, giver, receiver)
         else:
-            print("Email address not found for giver or receiver")
-    print("emails sent...")
+            log(f"Email not found for {giver}")
+
 def find_email_by_name(name, friends_list):
     for friend in friends_list:
         if friend.name == name:
             return friend.email
-    return None  # Return None if the name is not found in the friends_list
+    return None
 
-# ================================================
-# MAIN
-# ================================================
-friends_list=[]
+# ===========================================================================
+# Main Execution
+# ===========================================================================
+if __name__ == "__main__":
+    friends_list = parse_friends()
+    debug, gmail_user, gmail_app_password = parse_credentials()
 
-# Call function to parse credentials
-debug,gmail_user,gmail_app_password=parse_credentials()
-
-# Call function to parse friends
-friends_list = parse_friends()
-if debug==True:
-    print(len(friends_list))
-    for friend in friends_list: print(friend)
-
-# Check if all mails are valid before trying to send email
-if validate_emails(friends_list):
-    # Call function to assign gifts
-    assigned_gifts = assign_gifts(friends_list)
-
-    print(debug)
-
-    if assigned_gifts:
-        send_emails(assigned_gifts)
+    if debug:
+        log("Running in TEST mode.")
     else:
-        print("Unable to assign gifts. Please adjust constraints and try again.")
+        log("Running in PRODUCTION mode.")
+
+    if validate_emails(friends_list):
+        assigned_gifts = assign_gifts(friends_list)
+        if assigned_gifts:
+            log("Assigned gift pairs:")
+            for giver, receiver in assigned_gifts.items():
+                log(f"{giver} -> {receiver}")
+            send_emails(assigned_gifts)
+            log("Process completed successfully.")
+        else:
+            log("Unable to assign gifts. Check constraints.")
+    else:
+        log("Email validation failed.")
