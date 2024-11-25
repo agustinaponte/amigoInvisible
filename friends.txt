@@ -3,4 +3,5 @@
 #    friendsName;friendsEmail;doNotMatchName
 #    The doNotMatchName field is to prevent people from getting matched to their partner
 # Example:
-#    agustin;email@example.com;silvana
+#    john;email@example.com;jane
+# This assures John will not be matched to Jane
