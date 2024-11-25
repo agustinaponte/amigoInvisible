@@ -3,9 +3,9 @@ Decides who gives chistmas gifts to who and notifies each person by email.
 
 Requirements:
 
-- A gmail account and creation of an application password:
-https://support.google.com/mail/answer/185833?hl=en
-- Python has to be installed: https://www.python.org/downloads/
+- A gmail account and creation of an [application password](https://support.google.com/mail/answer/185833?hl=en):
+
+- [Python](https://www.python.org/downloads) has to be installed: /
 
 
 Usage:
